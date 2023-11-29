@@ -66,11 +66,10 @@ def create_autogen_memgpt_agent(
         persistence_manager,
     )
 
-    autogen_memgpt_agent = MemGPTAgent(
+    return MemGPTAgent(
         name=autogen_name,
         agent=memgpt_agent,
     )
-    return autogen_memgpt_agent
 
 
 class MemGPTAgent(ConversableAgent):
@@ -90,11 +89,7 @@ class MemGPTAgent(ConversableAgent):
         self.messages_processed_up_to_idx = 0
 
     def format_other_agent_message(self, msg):
-        if "name" in msg:
-            user_message = f"{msg['name']}: {msg['content']}"
-        else:
-            user_message = msg["content"]
-        return user_message
+        return f"{msg['name']}: {msg['content']}" if "name" in msg else msg["content"]
 
     def find_last_user_message(self):
         last_user_message = None
@@ -169,9 +164,5 @@ class MemGPTAgent(ConversableAgent):
 
         To accommodate AutoGen, concatenate all of MemGPT's steps into one and return as a single message.
         """
-        ret = {"role": "assistant", "content": ""}
-        lines = []
-        for m in messages:
-            lines.append(f"{m}")
-        ret["content"] = "\n".join(lines)
-        return ret
+        lines = [f"{m}" for m in messages]
+        return {"role": "assistant", "content": "\n".join(lines)}

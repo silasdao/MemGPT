@@ -14,12 +14,10 @@ def build_index(embedding_files: str, index_name: str):
         print(embedding_file)
         with open(embedding_file, "rt", encoding="utf-8") as file:
             embeddings = []
-            l = 0
             for line in tqdm(file):
                 # Parse each JSON line
                 data = json.loads(line)
                 embeddings.append(data)
-                l += 1
             data = np.array(embeddings).astype("float32")
             print(data.shape)
             try:

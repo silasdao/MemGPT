@@ -55,7 +55,7 @@ class InMemoryStateManager(PersistenceManager):
             pickle.dump(self, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
     def init(self, agent):
-        printd(f"Initializing InMemoryStateManager with agent object")
+        printd("Initializing InMemoryStateManager with agent object")
         self.all_messages = [{"timestamp": get_local_time(), "message": msg} for msg in agent.messages.copy()]
         self.messages = [{"timestamp": get_local_time(), "message": msg} for msg in agent.messages.copy()]
         self.memory = agent.memory
@@ -75,7 +75,7 @@ class InMemoryStateManager(PersistenceManager):
         # first tag with timestamps
         added_messages = [{"timestamp": get_local_time(), "message": msg} for msg in added_messages]
 
-        printd(f"InMemoryStateManager.prepend_to_message")
+        printd("InMemoryStateManager.prepend_to_message")
         self.messages = [self.messages[0]] + added_messages + self.messages[1:]
         self.all_messages.extend(added_messages)
 
@@ -83,7 +83,7 @@ class InMemoryStateManager(PersistenceManager):
         # first tag with timestamps
         added_messages = [{"timestamp": get_local_time(), "message": msg} for msg in added_messages]
 
-        printd(f"InMemoryStateManager.append_to_messages")
+        printd("InMemoryStateManager.append_to_messages")
         self.messages = self.messages + added_messages
         self.all_messages.extend(added_messages)
 
@@ -91,12 +91,12 @@ class InMemoryStateManager(PersistenceManager):
         # first tag with timestamps
         new_system_message = {"timestamp": get_local_time(), "message": new_system_message}
 
-        printd(f"InMemoryStateManager.swap_system_message")
+        printd("InMemoryStateManager.swap_system_message")
         self.messages[0] = new_system_message
         self.all_messages.append(new_system_message)
 
     def update_memory(self, new_memory):
-        printd(f"InMemoryStateManager.update_memory")
+        printd("InMemoryStateManager.update_memory")
         self.memory = new_memory
 
 
@@ -108,7 +108,7 @@ class InMemoryStateManagerWithPreloadedArchivalMemory(InMemoryStateManager):
         self.archival_memory_db = archival_memory_db
 
     def init(self, agent):
-        print(f"Initializing InMemoryStateManager with agent object")
+        print("Initializing InMemoryStateManager with agent object")
         self.all_messages = [{"timestamp": get_local_time(), "message": msg} for msg in agent.messages.copy()]
         self.messages = [{"timestamp": get_local_time(), "message": msg} for msg in agent.messages.copy()]
         self.memory = agent.memory
@@ -137,7 +137,7 @@ class InMemoryStateManagerWithFaiss(InMemoryStateManager):
         raise NotImplementedError
 
     def init(self, agent):
-        print(f"Initializing InMemoryStateManager with agent object")
+        print("Initializing InMemoryStateManager with agent object")
         self.all_messages = [{"timestamp": get_local_time(), "message": msg} for msg in agent.messages.copy()]
         self.messages = [{"timestamp": get_local_time(), "message": msg} for msg in agent.messages.copy()]
         self.memory = agent.memory

@@ -192,7 +192,7 @@ class Airoboros21Wrapper(LLMChatCompletionWrapper):
         if self.clean_func_args:
             function_name, function_parameters = self.clean_function_args(function_name, function_parameters)
 
-        message = {
+        return {
             "role": "assistant",
             "content": None,
             "function_call": {
@@ -200,7 +200,6 @@ class Airoboros21Wrapper(LLMChatCompletionWrapper):
                 "arguments": json.dumps(function_parameters),
             },
         }
-        return message
 
 
 class Airoboros21InnerMonologueWrapper(Airoboros21Wrapper):
@@ -402,7 +401,7 @@ class Airoboros21InnerMonologueWrapper(Airoboros21Wrapper):
                 function_parameters,
             ) = self.clean_function_args(function_name, function_parameters)
 
-        message = {
+        return {
             "role": "assistant",
             "content": inner_thoughts,
             "function_call": {
@@ -410,4 +409,3 @@ class Airoboros21InnerMonologueWrapper(Airoboros21Wrapper):
                 "arguments": json.dumps(function_parameters),
             },
         }
-        return message

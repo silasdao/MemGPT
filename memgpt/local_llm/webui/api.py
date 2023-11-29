@@ -19,13 +19,12 @@ def get_webui_completion(prompt, settings=SIMPLE):
     try:
         URI = f"{HOST.strip('/')}{WEBUI_API_SUFFIX}"
         response = requests.post(URI, json=request)
-        if response.status_code == 200:
-            result = response.json()
-            result = result["results"][0]["text"]
-            if DEBUG:
-                print(f"json API response.text: {result}")
-        else:
+        if response.status_code != 200:
             raise Exception(f"API call got non-200 response code for address: {URI}")
+        result = response.json()
+        result = result["results"][0]["text"]
+        if DEBUG:
+            print(f"json API response.text: {result}")
     except:
         # TODO handle gracefully
         raise

@@ -34,7 +34,7 @@ def initialize_memory(ai_notes, human_notes):
 
 
 def construct_system_with_memory(system, memory, memory_edit_timestamp, archival_memory=None, recall_memory=None):
-    full_system_message = "\n".join(
+    return "\n".join(
         [
             system,
             "\n",
@@ -50,7 +50,6 @@ def construct_system_with_memory(system, memory, memory_edit_timestamp, archival
             "</human>",
         ]
     )
-    return full_system_message
 
 
 def initialize_message_sequence(
@@ -70,28 +69,26 @@ def initialize_message_sequence(
     )
     first_user_message = get_login_event()  # event letting MemGPT know the user just logged in
 
-    if include_initial_boot_message:
-        if "gpt-3.5" in model:
-            initial_boot_messages = get_initial_boot_messages("startup_with_send_message_gpt35")
-        else:
-            initial_boot_messages = get_initial_boot_messages("startup_with_send_message")
-        messages = (
-            [
-                {"role": "system", "content": full_system_message},
-            ]
-            + initial_boot_messages
-            + [
-                {"role": "user", "content": first_user_message},
-            ]
-        )
-
-    else:
-        messages = [
+    if not include_initial_boot_message:
+        return [
             {"role": "system", "content": full_system_message},
             {"role": "user", "content": first_user_message},
         ]
 
-    return messages
+    initial_boot_messages = (
+        get_initial_boot_messages("startup_with_send_message_gpt35")
+        if "gpt-3.5" in model
+        else get_initial_boot_messages("startup_with_send_message")
+    )
+    return (
+        [
+            {"role": "system", "content": full_system_message},
+        ]
+        + initial_boot_messages
+        + [
+            {"role": "user", "content": first_user_message},
+        ]
+    )
 
 
 async def get_ai_reply_async(
@@ -499,11 +496,13 @@ class AgentAsync(object):
                 input_message_sequence = self.messages
 
             if len(input_message_sequence) > 1 and input_message_sequence[-1]["role"] != "user":
-                printd(f"WARNING: attempting to run ChatCompletion without user as the last message in the queue")
+                printd(
+                    "WARNING: attempting to run ChatCompletion without user as the last message in the queue"
+                )
 
             # Step 1: send the conversation and available functions to GPT
             if not skip_verify and (first_message or self.messages_total == self.messages_total_init):
-                printd(f"This is the first message. Running extra verifier on AI response.")
+                printd("This is the first message. Running extra verifier on AI response.")
                 counter = 0
                 while True:
                     response = await get_ai_reply_async(model=self.model, message_sequence=input_message_sequence, functions=self.functions)
@@ -667,23 +666,19 @@ class AgentAsync(object):
         results, total = await self.persistence_manager.recall_memory.text_search(query, count=count, start=page * count)
         num_pages = math.ceil(total / count) - 1  # 0 index
         if len(results) == 0:
-            results_str = f"No results found."
-        else:
-            results_pref = f"Showing {len(results)} of {total} results (page {page}/{num_pages}):"
-            results_formatted = [f"timestamp: {d['timestamp']}, {d['message']['role']} - {d['message']['content']}" for d in results]
-            results_str = f"{results_pref} {json.dumps(results_formatted)}"
-        return results_str
+            return "No results found."
+        results_pref = f"Showing {len(results)} of {total} results (page {page}/{num_pages}):"
+        results_formatted = [f"timestamp: {d['timestamp']}, {d['message']['role']} - {d['message']['content']}" for d in results]
+        return f"{results_pref} {json.dumps(results_formatted)}"
 
     async def recall_memory_search_date(self, start_date, end_date, count=5, page=0):
         results, total = await self.persistence_manager.recall_memory.date_search(start_date, end_date, count=count, start=page * count)
         num_pages = math.ceil(total / count) - 1  # 0 index
         if len(results) == 0:
-            results_str = f"No results found."
-        else:
-            results_pref = f"Showing {len(results)} of {total} results (page {page}/{num_pages}):"
-            results_formatted = [f"timestamp: {d['timestamp']}, {d['message']['role']} - {d['message']['content']}" for d in results]
-            results_str = f"{results_pref} {json.dumps(results_formatted)}"
-        return results_str
+            return "No results found."
+        results_pref = f"Showing {len(results)} of {total} results (page {page}/{num_pages}):"
+        results_formatted = [f"timestamp: {d['timestamp']}, {d['message']['role']} - {d['message']['content']}" for d in results]
+        return f"{results_pref} {json.dumps(results_formatted)}"
 
     async def archival_memory_insert(self, content, embedding=None):
         await self.persistence_manager.archival_memory.insert(content, embedding=None)
@@ -693,12 +688,10 @@ class AgentAsync(object):
         results, total = await self.persistence_manager.archival_memory.search(query, count=count, start=page * count)
         num_pages = math.ceil(total / count) - 1  # 0 index
         if len(results) == 0:
-            results_str = f"No results found."
-        else:
-            results_pref = f"Showing {len(results)} of {total} results (page {page}/{num_pages}):"
-            results_formatted = [f"timestamp: {d['timestamp']}, memory: {d['content']}" for d in results]
-            results_str = f"{results_pref} {json.dumps(results_formatted)}"
-        return results_str
+            return "No results found."
+        results_pref = f"Showing {len(results)} of {total} results (page {page}/{num_pages}):"
+        results_formatted = [f"timestamp: {d['timestamp']}, memory: {d['content']}" for d in results]
+        return f"{results_pref} {json.dumps(results_formatted)}"
 
     async def pause_heartbeats(self, minutes, max_pause=MAX_PAUSE_HEARTBEATS):
         """Pause timed heartbeats for N minutes"""
@@ -736,5 +729,4 @@ class AgentAsync(object):
             # function_call=function_call,
         )
 
-        reply = response.choices[0].message.content
-        return reply
+        return response.choices[0].message.content

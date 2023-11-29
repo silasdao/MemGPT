@@ -104,7 +104,7 @@ class AutoGenInterface(object):
                 try:
                     msg_json = json.loads(msg)
                 except:
-                    print(f"Warning: failed to parse user message into json")
+                    print("Warning: failed to parse user message into json")
                     message = f"{Fore.GREEN}{Style.BRIGHT}🧑 {Fore.GREEN}{msg}{Style.RESET_ALL}" if self.fancy else f"[user] {msg}"
                     self.message_list.append(message)
                     return
@@ -113,11 +113,10 @@ class AutoGenInterface(object):
             msg_json.pop("type")
             message = f"{Fore.GREEN}{Style.BRIGHT}🧑 {Fore.GREEN}{msg_json}{Style.RESET_ALL}" if self.fancy else f"[user] {msg}"
         elif msg_json["type"] == "heartbeat":
-            if True or DEBUG:
-                msg_json.pop("type")
-                message = (
-                    f"{Fore.GREEN}{Style.BRIGHT}💓 {Fore.GREEN}{msg_json}{Style.RESET_ALL}" if self.fancy else f"[system heartbeat] {msg}"
-                )
+            msg_json.pop("type")
+            message = (
+                f"{Fore.GREEN}{Style.BRIGHT}💓 {Fore.GREEN}{msg_json}{Style.RESET_ALL}" if self.fancy else f"[system heartbeat] {msg}"
+            )
         elif msg_json["type"] == "system_message":
             msg_json.pop("type")
             message = f"{Fore.GREEN}{Style.BRIGHT}🖥️ {Fore.GREEN}{msg_json}{Style.RESET_ALL}" if self.fancy else f"[system] {msg}"
@@ -146,46 +145,44 @@ class AutoGenInterface(object):
         elif msg.startswith("Running "):
             if DEBUG:
                 message = f"{Fore.RED}{Style.BRIGHT}⚡ [function] {Fore.RED}{msg}{Style.RESET_ALL}" if self.fancy else f"[function] {msg}"
-            else:
-                if "memory" in msg:
-                    match = re.search(r"Running (\w+)\((.*)\)", msg)
-                    if match:
-                        function_name = match.group(1)
-                        function_args = match.group(2)
-                        message = (
-                            f"{Fore.RED}{Style.BRIGHT}⚡🧠 [function] {Fore.RED}updating memory with {function_name}{Style.RESET_ALL}:"
-                            if self.fancy
-                            else f"[function] updating memory with {function_name}"
-                        )
-                        try:
-                            msg_dict = eval(function_args)
-                            if function_name == "archival_memory_search":
-                                message = (
-                                    f'{Fore.RED}\tquery: {msg_dict["query"]}, page: {msg_dict["page"]}'
-                                    if self.fancy
-                                    else f'[function] query: {msg_dict["query"]}, page: {msg_dict["page"]}'
-                                )
-                            else:
-                                message = (
-                                    f'{Fore.RED}{Style.BRIGHT}\t{Fore.RED} {msg_dict["old_content"]}\n\t{Fore.GREEN}→ {msg_dict["new_content"]}'
-                                    if self.fancy
-                                    else f'[old -> new] {msg_dict["old_content"]} -> {msg_dict["new_content"]}'
-                                )
-                        except Exception as e:
-                            print(e)
-                            message = msg_dict
-                    else:
-                        print(f"Warning: did not recognize function message")
-                        message = (
-                            f"{Fore.RED}{Style.BRIGHT}⚡ [function] {Fore.RED}{msg}{Style.RESET_ALL}" if self.fancy else f"[function] {msg}"
-                        )
-                elif "send_message" in msg:
-                    # ignore in debug mode
-                    message = None
+            elif "memory" in msg:
+                if match := re.search(r"Running (\w+)\((.*)\)", msg):
+                    function_name = match.group(1)
+                    function_args = match.group(2)
+                    message = (
+                        f"{Fore.RED}{Style.BRIGHT}⚡🧠 [function] {Fore.RED}updating memory with {function_name}{Style.RESET_ALL}:"
+                        if self.fancy
+                        else f"[function] updating memory with {function_name}"
+                    )
+                    try:
+                        msg_dict = eval(function_args)
+                        if function_name == "archival_memory_search":
+                            message = (
+                                f'{Fore.RED}\tquery: {msg_dict["query"]}, page: {msg_dict["page"]}'
+                                if self.fancy
+                                else f'[function] query: {msg_dict["query"]}, page: {msg_dict["page"]}'
+                            )
+                        else:
+                            message = (
+                                f'{Fore.RED}{Style.BRIGHT}\t{Fore.RED} {msg_dict["old_content"]}\n\t{Fore.GREEN}→ {msg_dict["new_content"]}'
+                                if self.fancy
+                                else f'[old -> new] {msg_dict["old_content"]} -> {msg_dict["new_content"]}'
+                            )
+                    except Exception as e:
+                        print(e)
+                        message = msg_dict
                 else:
+                    print("Warning: did not recognize function message")
                     message = (
                         f"{Fore.RED}{Style.BRIGHT}⚡ [function] {Fore.RED}{msg}{Style.RESET_ALL}" if self.fancy else f"[function] {msg}"
                     )
+            elif "send_message" in msg:
+                # ignore in debug mode
+                message = None
+            else:
+                message = (
+                    f"{Fore.RED}{Style.BRIGHT}⚡ [function] {Fore.RED}{msg}{Style.RESET_ALL}" if self.fancy else f"[function] {msg}"
+                )
         else:
             try:
                 msg_dict = json.loads(msg)

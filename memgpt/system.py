@@ -33,14 +33,21 @@ def get_initial_boot_messages(version="startup"):
 
     elif version == "startup_with_send_message_gpt35":
         messages = [
-            # first message includes both inner monologue and function call to send_message
             {
                 "role": "assistant",
                 "content": "*inner thoughts* Still waiting on the user. Sending a message with function.",
-                "function_call": {"name": "send_message", "arguments": '{\n  "message": "' + f"Hi, is anyone there?" + '"\n}'},
+                "function_call": {
+                    "name": "send_message",
+                    "arguments": '{\n  "message": "'
+                    + "Hi, is anyone there?"
+                    + '"\n}',
+                },
             },
-            # obligatory function return message
-            {"role": "function", "name": "send_message", "content": package_function_response(True, None)},
+            {
+                "role": "function",
+                "name": "send_message",
+                "content": package_function_response(True, None),
+            },
         ]
 
     else:

@@ -51,10 +51,7 @@ def get_local_time_military():
     sf_time_zone = pytz.timezone("America/Los_Angeles")
     local_time = current_time_utc.astimezone(sf_time_zone)
 
-    # You may format it as you desire
-    formatted_time = local_time.strftime("%Y-%m-%d %H:%M:%S %Z%z")
-
-    return formatted_time
+    return local_time.strftime("%Y-%m-%d %H:%M:%S %Z%z")
 
 
 def get_local_time():
@@ -65,23 +62,18 @@ def get_local_time():
     sf_time_zone = pytz.timezone("America/Los_Angeles")
     local_time = current_time_utc.astimezone(sf_time_zone)
 
-    # You may format it as you desire, including AM/PM
-    formatted_time = local_time.strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
-
-    return formatted_time
+    return local_time.strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
 
 
 def parse_json(string):
     result = None
     try:
-        result = json.loads(string)
-        return result
+        return json.loads(string)
     except Exception as e:
         print(f"Error parsing json with json package: {e}")
 
     try:
-        result = demjson.decode(string)
-        return result
+        return demjson.decode(string)
     except demjson.JSONDecodeError as e:
         print(f"Error parsing json with demjson package: {e}")
         raise e
@@ -97,40 +89,36 @@ def prepare_archival_index(folder):
         all_data = [json.loads(line) for line in f]
     for doc in all_data:
         total = len(doc)
-        for i, passage in enumerate(doc):
-            archival_database.append(
-                {
-                    "content": f"[Title: {passage['title']}, {i}/{total}] {passage['text']}",
-                    "timestamp": get_local_time(),
-                }
-            )
+        archival_database.extend(
+            {
+                "content": f"[Title: {passage['title']}, {i}/{total}] {passage['text']}",
+                "timestamp": get_local_time(),
+            }
+            for i, passage in enumerate(doc)
+        )
     return index, archival_database
 
 
 def read_in_chunks(file_object, chunk_size):
     while True:
-        data = file_object.read(chunk_size)
-        if not data:
+        if data := file_object.read(chunk_size):
+            yield data
+        else:
             break
-        yield data
 
 
 def read_pdf_in_chunks(file, chunk_size):
     doc = fitz.open(file)
     for page in doc:
-        text = page.get_text()
-        yield text
+        yield page.get_text()
 
 
 def read_in_rows_csv(file_object, chunk_size):
     csvreader = csv.reader(file_object)
     header = next(csvreader)
     for row in csvreader:
-        next_row_terms = []
-        for h, v in zip(header, row):
-            next_row_terms.append(f"{h}={v}")
-        next_row_str = ", ".join(next_row_terms)
-        yield next_row_str
+        next_row_terms = [f"{h}={v}" for h, v in zip(header, row)]
+        yield ", ".join(next_row_terms)
 
 
 def prepare_archival_index_from_files(glob_pattern, tkns_per_chunk=300, model="gpt-4"):
@@ -140,24 +128,24 @@ def prepare_archival_index_from_files(glob_pattern, tkns_per_chunk=300, model="g
 
 
 def total_bytes(pattern):
-    total = 0
-    for filename in glob.glob(pattern):
-        if os.path.isfile(filename):  # ensure it's a file and not a directory
-            total += os.path.getsize(filename)
-    return total
+    return sum(
+        os.path.getsize(filename)
+        for filename in glob.glob(pattern)
+        if os.path.isfile(filename)
+    )
 
 
 def chunk_file(file, tkns_per_chunk=300, model="gpt-4"):
     encoding = tiktoken.encoding_for_model(model)
     with open(file, "r") as f:
         if file.endswith(".pdf"):
-            lines = [l for l in read_pdf_in_chunks(file, tkns_per_chunk * 8)]
-            if len(lines) == 0:
+            lines = list(read_pdf_in_chunks(file, tkns_per_chunk * 8))
+            if not lines:
                 print(f"Warning: {file} did not have any extractable text.")
         elif file.endswith(".csv"):
-            lines = [l for l in read_in_rows_csv(f, tkns_per_chunk * 8)]
+            lines = list(read_in_rows_csv(f, tkns_per_chunk * 8))
         else:
-            lines = [l for l in read_in_chunks(f, tkns_per_chunk * 4)]
+            lines = list(read_in_chunks(f, tkns_per_chunk * 4))
     curr_chunk = []
     curr_token_ct = 0
     for i, line in enumerate(lines):
@@ -194,14 +182,14 @@ def chunk_files(files, tkns_per_chunk=300, model="gpt-4"):
         timestamp = os.path.getmtime(file)
         formatted_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
         file_stem = file.split("/")[-1]
-        chunks = [c for c in chunk_file(file, tkns_per_chunk, model)]
-        for i, chunk in enumerate(chunks):
-            archival_database.append(
-                {
-                    "content": f"[File: {file_stem} Part {i}/{len(chunks)}] {chunk}",
-                    "timestamp": formatted_time,
-                }
-            )
+        chunks = list(chunk_file(file, tkns_per_chunk, model))
+        archival_database.extend(
+            {
+                "content": f"[File: {file_stem} Part {i}/{len(chunks)}] {chunk}",
+                "timestamp": formatted_time,
+            }
+            for i, chunk in enumerate(chunks)
+        )
     return archival_database
 
 
@@ -209,14 +197,13 @@ def chunk_files_for_jsonl(files, tkns_per_chunk=300, model="gpt-4"):
     ret = []
     for file in files:
         file_stem = file.split("/")[-1]
-        curr_file = []
-        for chunk in chunk_file(file, tkns_per_chunk, model):
-            curr_file.append(
-                {
-                    "title": file_stem,
-                    "text": chunk,
-                }
-            )
+        curr_file = [
+            {
+                "title": file_stem,
+                "text": chunk,
+            }
+            for chunk in chunk_file(file, tkns_per_chunk, model)
+        ]
         ret.append(curr_file)
     return ret
 

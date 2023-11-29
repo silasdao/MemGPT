@@ -227,7 +227,7 @@ class Dolphin21MistralWrapper(LLMChatCompletionWrapper):
         if self.clean_func_args:
             function_name, function_parameters = self.clean_function_args(function_name, function_parameters)
 
-        message = {
+        return {
             "role": "assistant",
             "content": None,
             "function_call": {
@@ -235,4 +235,3 @@ class Dolphin21MistralWrapper(LLMChatCompletionWrapper):
                 "arguments": json.dumps(function_parameters),
             },
         }
-        return message

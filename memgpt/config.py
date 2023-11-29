@@ -64,10 +64,10 @@ class Config:
         self.archival_storage_files = archival_storage_files
         self.archival_storage_index = archival_storage_index
         self.compute_embeddings = compute_embeddings
-        recompute_embeddings = self.compute_embeddings
-        if self.archival_storage_index:
-            recompute_embeddings = False  # TODO Legacy support -- can't recompute embeddings on a path that's not specified.
         if self.archival_storage_files:
+            recompute_embeddings = (
+                False if self.archival_storage_index else self.compute_embeddings
+            )
             await self.configure_archival_storage(recompute_embeddings)
         return self
 
@@ -131,7 +131,7 @@ class Config:
                     questionary.Choice("A glob pattern", value="glob"),
                 ],
             ).ask_async()
-            if self.load_type == "folder" or self.load_type == "sql":
+            if self.load_type in ["folder", "sql"]:
                 archival_storage_path = await questionary.path("Please enter the folder or file (tab for autocomplete):").ask_async()
                 if os.path.isdir(archival_storage_path):
                     self.archival_storage_files = os.path.join(archival_storage_path, "*")
@@ -225,24 +225,20 @@ class Config:
         custom_personas = Config.get_personas(Config.custom_personas_dir)
         return (
             Config.get_persona_choices(
-                [p for p in custom_personas],
-                get_persona_text,
-                Config.custom_personas_dir,
+                list(custom_personas), get_persona_text, Config.custom_personas_dir
             )
             + Config.get_persona_choices(
-                [p for p in custom_personas_in_examples + default_personas],
+                list(custom_personas_in_examples + default_personas),
                 get_persona_text,
                 None,
-                # Config.personas_dir,
             )
-            + [
-                questionary.Separator(),
-                questionary.Choice(
-                    f"📝 You can create your own personas by adding .txt files to {Config.custom_personas_dir}.",
-                    disabled=True,
-                ),
-            ]
-        )
+        ) + [
+            questionary.Separator(),
+            questionary.Choice(
+                f"📝 You can create your own personas by adding .txt files to {Config.custom_personas_dir}.",
+                disabled=True,
+            ),
+        ]
 
     @staticmethod
     def get_user_personas():
@@ -253,24 +249,20 @@ class Config:
         custom_personas = Config.get_personas(Config.custom_humans_dir)
         return (
             Config.get_persona_choices(
-                [p for p in custom_personas],
-                get_human_text,
-                Config.custom_humans_dir,
+                list(custom_personas), get_human_text, Config.custom_humans_dir
             )
             + Config.get_persona_choices(
-                [p for p in custom_personas_in_examples + default_personas],
+                list(custom_personas_in_examples + default_personas),
                 get_human_text,
                 None,
-                # Config.humans_dir,
             )
-            + [
-                questionary.Separator(),
-                questionary.Choice(
-                    f"📝 You can create your own human profiles by adding .txt files to {Config.custom_humans_dir}.",
-                    disabled=True,
-                ),
-            ]
-        )
+        ) + [
+            questionary.Separator(),
+            questionary.Choice(
+                f"📝 You can create your own human profiles by adding .txt files to {Config.custom_humans_dir}.",
+                disabled=True,
+            ),
+        ]
 
     @staticmethod
     def get_personas(dir_path) -> List[str]:
@@ -306,9 +298,7 @@ class Config:
             if os.path.isfile(os.path.join(configs_dir, f)) and Config.is_valid_config_file(os.path.join(configs_dir, f))
         ]
         # Return the file with the most recent modification time
-        if len(files) == 0:
-            return None
-        return max(files, key=os.path.getmtime)
+        return None if not files else max(files, key=os.path.getmtime)
 
 
 def indent(text, num_lines=5):

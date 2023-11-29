@@ -106,20 +106,17 @@ def aretry_with_exponential_backoff(
 
 @aretry_with_exponential_backoff
 async def acompletions_with_backoff(**kwargs):
-    # Local model
     if HOST_TYPE is not None:
         return await get_chat_completion(**kwargs)
 
-    # OpenAI / Azure model
-    else:
-        if using_azure():
-            azure_openai_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
-            if azure_openai_deployment is not None:
-                kwargs["deployment_id"] = azure_openai_deployment
-            else:
-                kwargs["engine"] = MODEL_TO_AZURE_ENGINE[kwargs["model"]]
-                kwargs.pop("model")
-        return await openai.ChatCompletion.acreate(**kwargs)
+    if using_azure():
+        azure_openai_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+        if azure_openai_deployment is not None:
+            kwargs["deployment_id"] = azure_openai_deployment
+        else:
+            kwargs["engine"] = MODEL_TO_AZURE_ENGINE[kwargs["model"]]
+            kwargs.pop("model")
+    return await openai.ChatCompletion.acreate(**kwargs)
 
 
 @aretry_with_exponential_backoff
@@ -140,8 +137,7 @@ async def async_get_embedding_with_backoff(text, model="text-embedding-ada-002")
     It specifies defaults + handles rate-limiting + is async"""
     text = text.replace("\n", " ")
     response = await acreate_embedding_with_backoff(input=[text], model=model)
-    embedding = response["data"][0]["embedding"]
-    return embedding
+    return response["data"][0]["embedding"]
 
 
 MODEL_TO_AZURE_ENGINE = {
@@ -180,7 +176,9 @@ def configure_azure_support():
         azure_openai_endpoint,
         azure_openai_version,
     ]:
-        print(f"Error: missing Azure OpenAI environment variables. Please see README section on Azure.")
+        print(
+            "Error: missing Azure OpenAI environment variables. Please see README section on Azure."
+        )
         return
 
     openai.api_type = "azure"
@@ -195,5 +193,5 @@ def check_azure_embeddings():
     azure_openai_embedding_deployment = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
     if azure_openai_deployment is not None and azure_openai_embedding_deployment is None:
         raise ValueError(
-            f"Error: It looks like you are using Azure deployment ids and computing embeddings, make sure you are setting one for embeddings as well. Please see README section on Azure"
+            "Error: It looks like you are using Azure deployment ids and computing embeddings, make sure you are setting one for embeddings as well. Please see README section on Azure"
         )

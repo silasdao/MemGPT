@@ -89,9 +89,7 @@ async def generate_embedding_file(filename, parallel_mode=False):
     for i, data in enumerate(tqdm(all_data, desc="Processing data", total=len(all_data))):
         documents = data
         # Inner loop progress bar
-        for idx, doc in enumerate(
-            tqdm(documents, desc=f"Embedding documents for data {i+1}/{len(all_data)}", total=len(documents), leave=False)
-        ):
+        for doc in tqdm(documents, desc=f"Embedding documents for data {i+1}/{len(all_data)}", total=len(documents), leave=False):
             title = doc["title"]
             text = doc["text"]
             document_string = f"[Title: {title}] {text}"
@@ -113,10 +111,7 @@ async def generate_embedding_file(filename, parallel_mode=False):
 
 
 async def main():
-    if len(sys.argv) > 1:
-        filename = sys.argv[1]
-    else:
-        filename = DEFAULT_FILE
+    filename = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_FILE
     await generate_embedding_file(filename)
 
 

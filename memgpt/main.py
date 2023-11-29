@@ -83,13 +83,10 @@ def load(memgpt_agent, filename):
             print(f"Loading {filename} failed with: {e}")
     else:
         # Load the latest file
-        print(f"/load warning: no checkpoint specified, loading most recent checkpoint instead")
-        json_files = glob.glob("saved_state/*.json")  # This will list all .json files in the current directory.
-
-        # Check if there are any json files.
-        if not json_files:
-            print(f"/load error: no .json checkpoint files found")
-        else:
+        print(
+            "/load warning: no checkpoint specified, loading most recent checkpoint instead"
+        )
+        if json_files := glob.glob("saved_state/*.json"):
             # Sort files based on modified timestamp, with the latest file being the first.
             filename = max(json_files, key=os.path.getmtime)
             try:
@@ -98,6 +95,8 @@ def load(memgpt_agent, filename):
             except Exception as e:
                 print(f"Loading {filename} failed with: {e}")
 
+        else:
+            print("/load error: no .json checkpoint files found")
     # need to load persistence manager too
     filename = filename.replace(".json", ".persistence.pickle")
     try:
@@ -323,14 +322,13 @@ async def main(
         if not os.path.exists(cfg.archival_storage_files):
             print(f"File {cfg.archival_storage_files} does not exist")
             return
-        # Ingest data from file into archival storage
         else:
-            print(f"Database found! Loading database into archival memory")
+            print("Database found! Loading database into archival memory")
             data_list = utils.read_database_as_list(cfg.archival_storage_files)
             user_message = f"Your archival memory has been loaded with a SQL database called {data_list[0]}, which contains schema {data_list[1]}. Remember to refer to this first while answering any user questions!"
             for row in data_list:
                 await memgpt_agent.persistence_manager.archival_memory.insert(row)
-            print(f"Database loaded into archival memory.")
+            print("Database loaded into archival memory.")
 
     if cfg.agent_save_file:
         load_save_file = await questionary.confirm(f"Load in saved agent '{cfg.agent_save_file}'?").ask_async()
@@ -361,7 +359,7 @@ async def main(
             user_input = user_input.rstrip()
 
             if user_input.startswith("!"):
-                print(f"Commands for CLI begin with '/' not '!'")
+                print("Commands for CLI begin with '/' not '!'")
                 continue
 
             if user_input == "":
@@ -437,7 +435,6 @@ async def main(
                         memgpt_agent.messages.pop()
                     continue
 
-                # No skip options
                 elif user_input.lower() == "/wipe":
                     memgpt_agent = agent.AgentAsync(memgpt.interface)
                     user_message = None
@@ -452,7 +449,7 @@ async def main(
                     multiline_input = not multiline_input
                     continue
 
-                elif user_input.lower() == "/" or user_input.lower() == "/help":
+                elif user_input.lower() in ["/", "/help"]:
                     questionary.print("CLI commands", "bold")
                     for cmd, desc in USER_COMMANDS:
                         questionary.print(cmd, "bold")

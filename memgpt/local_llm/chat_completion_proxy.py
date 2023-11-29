@@ -29,7 +29,7 @@ async def get_chat_completion(
         llm_wrapper = dolphin.Dolphin21MistralWrapper()
     else:
         # Warn the user that we're using the fallback
-        print(f"Warning: no wrapper specified for local LLM, using the default wrapper")
+        print("Warning: no wrapper specified for local LLM, using the default wrapper")
         llm_wrapper = DEFAULT_WRAPPER
 
     # First step: turn the message sequence into a prompt that the model expects
@@ -38,11 +38,9 @@ async def get_chat_completion(
         print(prompt)
 
     try:
-        if HOST_TYPE == "webui":
-            result = get_webui_completion(prompt)
-        else:
-            print(f"Warning: BACKEND_TYPE was not set, defaulting to webui")
-            result = get_webui_completion(prompt)
+        if HOST_TYPE != "webui":
+            print("Warning: BACKEND_TYPE was not set, defaulting to webui")
+        result = get_webui_completion(prompt)
     except requests.exceptions.ConnectionError as e:
         raise ValueError(f"Was unable to connect to host {HOST}")
 
@@ -53,8 +51,7 @@ async def get_chat_completion(
     if DEBUG:
         print(json.dumps(chat_completion_result, indent=2))
 
-    # unpack with response.choices[0].message.content
-    response = DotDict(
+    return DotDict(
         {
             "model": None,
             "choices": [
@@ -75,4 +72,3 @@ async def get_chat_completion(
             ),
         }
     )
-    return response
